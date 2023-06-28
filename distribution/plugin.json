@@ -1,0 +1,22 @@
+{
+	"preload": "preload.js",
+	"logo": "logo.png",
+	"features": [
+		{
+		  "code": "otp_list",
+		  "explain": "展示OTP列表",
+			"cmds": ["otp", "ls"]
+		},
+        {
+		  "code": "otp_add",
+		  "explain": "新增OTP",
+			"cmds": [
+                {
+                    "type": "regex",
+                    "label": "新增TOTP",
+                    "match": "/otpauth:\/\/totp/i"
+                }
+            ]
+		}
+	]
+}
