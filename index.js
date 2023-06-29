@@ -1,62 +1,84 @@
 const OTPAuth = require("./otpauth.esm")
-// import * as OTPAuth from "./otpauth.esm"
 
-const TOTP_FROM_EDIT = new OTPAuth.TOTP({
-    issuer: "ACME",
-    label: "AzureDiamond",
-    algorithm: "SHA512",
-    digits: 6,
-    period: 60,
-    secret: "V6YZWJLHVDVV3VRYBOUBDCZRQD4CM2YT3TMEKQ33XYMJO4JS3ICT4ZG3"
-})
-
-const TOTP_FROM_URI = OTPAuth.URI.parse('otpauth://totp/wanghe06000@KAYAKWISE.COM:wanghe06000_OTP?digits=6&secret=V6YZWJLHVDVV3VRYBOUBDCZRQD4CM2YT3TMEKQ33XYMJO4JS3ICT4ZG3&period=60&algorithm=SHA512&issuer=wanghe06000%40KAYAKWISE.COM')
-
-function ShowList() {
-    let token = TOTP_FROM_EDIT.generate()
-    let token2 = TOTP_FROM_URI.generate()
-
-    return {
-        title: token,
-        description: `${TOTP_FROM_URI.issuer}--tk2=${token2}`
-    }
+function ShowList(SetList, selectKey) {
+    utools.db.promises.allDocs(selectKey ? [selectKey] : null).then(dbData => {
+        let list = []
+        dbData.forEach(obj => {
+            let OTP_FROM_URI = OTPAuth.URI.parse(obj.url)
+            list.push({
+                title: OTP_FROM_URI.generate(),
+                description: `${obj._id}--${OTP_FROM_URI.issuer}`,
+                id: obj._id,
+                type: 'code'
+            })
+        })
+        if (list.length === 1) {
+            list.push(...[
+                // { title: '修改标题', type: 'edit', id: list[0].id },
+                { title: '删除动态码', type: 'remove', id: list[0].id },
+            ])
+        } else if (list.length === 0) {
+            list.push({
+                title: '无数据',
+                description: '复制绑定码的URL后打开uTools以添加'
+            })
+        }
+        SetList(list)
+    })
 }
-
-// console.log([
-//     ShowList()
-// ])
 
 window.exports = {
     otp_list: {
         mode: "list",
         args: {
             enter: (action, callbackSetList) => {
-                let list = [
-                    ShowList()
-                ]
-                callbackSetList(list)
+                ShowList(callbackSetList)
             },
             // 子输入框内容变化时被调用 可选 (未设置则无搜索)
-            // search: (action, searchWord, callbackSetList) => {
-            //     // 获取一些数据
-            //     // 执行 callbackSetList 显示出来
-            //     callbackSetList([
-            //         {
-            //             title: '这是标题',
-            //             description: '这是描述',
-            //             icon: '', // 图标
-            //             url: 'https://yuanliao.info'
-            //         }
-            //     ])
-            // },
+            search: (action, searchWord, callbackSetList) => {
+                ShowList(callbackSetList, searchWord)
+            },
             // 用户选择列表中某个条目时被调用
             select: (action, itemData, callbackSetList) => {
-                window.utools.hideMainWindow()
-                const code = itemData.title
-                utools.copyText(code)
-                window.utools.outPlugin()
+                utools.hideMainWindow()
+                switch (itemData.type) {
+                    case 'code':
+                        const code = itemData.title
+                        utools.copyText(code)
+                        utools.showNotification('"' + code + '" 已复制')
+                        utools.outPlugin()
+                        break;
+                    case 'edit':
+                        // const code = itemData.title
+                        // utools.copyText(code)
+                        utools.outPlugin()
+                        break;
+                    case 'remove':
+                        utools.db.remove(itemData.id)
+                        utools.showNotification('删除完成')
+                        utools.outPlugin()
+                        break;
+                    default:
+                        break;
+                }
+            },
+            placeholder: "输入序号编辑动态口令"
+        }
+    },
+    otp_add: {
+        mode: "none",
+        args: {
+            enter: (action) => {
+                utools.hideMainWindow()
+                utools.db.promises.allDocs().then(dbData => {
+                    utools.db.put({
+                        _id: `${dbData.length + 1}`,
+                        url: action.payload
+                    })
+                })
+                utools.showNotification('添加完成')
+                utools.outPlugin()
             }
-            // placeholder: "搜索"
         }
     }
 }
