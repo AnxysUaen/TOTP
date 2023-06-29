@@ -1,4 +1,4 @@
-const OTPAuth = require("./otpauth.esm")
+const OTPAuth = require("./distribution/otpauth.esm")
 
 function ShowList(SetList, selectKey) {
     utools.db.promises.allDocs(selectKey ? [selectKey] : null).then(dbData => {
