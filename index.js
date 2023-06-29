@@ -72,7 +72,7 @@ window.exports = {
                 utools.hideMainWindow()
                 utools.db.promises.allDocs().then(dbData => {
                     utools.db.put({
-                        _id: `${dbData.length ? dbData.sort((a, b) => Number(a._id) - Number(b._id))[0].index + 1 : 1}`,
+                        _id: `${dbData.length ? dbData.sort((a, b) => Number(a._id) - Number(b._id))[0]._id + 1 : 1}`,
                         url: action.payload,
                     })
                 })
